@@ -66,7 +66,7 @@ export JAVA_HOME=localizacao_do_java
 
 ### Problemas envolvendo gradle
 
-Adicionar na pasta dentro do diretório do arquivo android/gradle/wrapper:
+Adicionar na pasta dentro do diretório do arquivo android/gradle/wrapper no arquivo gradle-wrapper.properties:
 
 ```
 distributionUrl=https\://services.gradle.org/distributions/gradle-4.4-all.zip
