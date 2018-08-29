@@ -52,4 +52,22 @@ for android.
 
 ## Notas para o Carlinhos
 
-Eae Carlinhos, da uma lida ai e cria aquelas pastas que eu falei ali em cima, elas ainda não tem nada dentro.
+### Problema com NDK
+
+Ir no android studio e selecionar na aba de opções do sdk a utilização de ndk, vai baixar dai e resolve seus problemas.
+
+### Problemas com java
+
+Baixar o jdk1.8 do site e descompactar em algum lugar do seu disco depois usar o comando:
+
+```
+export JAVA_HOME=localizacao_do_java
+```
+
+### Problemas envolvendo gradle
+
+Adicionar na pasta dentro do diretório do arquivo android/gradle/wrapper:
+
+```
+distributionUrl=https\://services.gradle.org/distributions/gradle-4.4-all.zip
+```
