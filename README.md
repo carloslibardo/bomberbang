@@ -52,6 +52,20 @@ for android.
 
 ## Notas para o Carlinhos
 
+### Problema do local.properties
+
+Inserir no diretório android do projeto um arquivo de nome local.properties com a informação:
+
+```
+sdk.dir=/home/username/Android/sdk
+```
+
+ou
+
+```
+sdk.dir=lugar que ta teu sdk
+```
+
 ### Problema com NDK
 
 Ir no android studio e selecionar na aba de opções do sdk a utilização de ndk, vai baixar dai e resolve seus problemas.
