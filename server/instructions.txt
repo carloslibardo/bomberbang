@@ -1,0 +1,10 @@
+Instructions to run the server locally:
+
+1 - run "pip3 install -r requirements.txt" to install requirements to execution
+2 - run: "python3 server.py" to run the server locally
+3 - acess server from "yourip:5000/app/login"
+
+Requirements:
+
+The server will receive a json file with username and password fields
+The server will return a json file with the logged information(if the log was approved) and the cause(why the log was or wasn't approved)

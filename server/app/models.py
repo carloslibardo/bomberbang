@@ -1,19 +1,20 @@
 from app import login, db
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
+from mongoengine import *
 
+#creates a method to load a user in login from its id
 @login.user_loader
-def load_user(id):
-	return User.query.get(int(id))
+def load_user(search_id):
+	return User.objects(id=search_id).first()
 
-class User(UserMixin, db.Model):
-	id = db.Column(db.Integer, primary_key=True)
-	username = db.Column(db.String(64), index=True, unique=True)
-	password_hash = db.Column(db.String(128), index=True, unique=False)
-	email = db.Column(db.String(128), index=True, unique=True)
-	first_name = db.Column(db.String(64), index=True, unique=False)
-	last_name = db.Column(db.String(64), index=True, unique=False)
-	#TODO add other user information data
+#creates a User model to save user data
+class User(UserMixin, db.DynamicDocument):
+	username = StringField(max_length=64, require=True, unique=True)
+	password_hash = StringField(max_length=128, require=True)
+	email = StringField(max_length=128, require=True, unique=True)
+	first_name = StringField(max_length=64, require=True)
+	last_name = StringField(max_length=64, require=True)
 
 	def set_password(self, password):
 		self.password_hash = generate_password_hash(password)

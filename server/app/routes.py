@@ -3,6 +3,7 @@ from flask import jsonify, request
 from flask_login import current_user, logout_user, login_user, login_required
 from app.models import User
 
+#route to login from requests
 @app.route('/app/login', methods=['GET'])
 def logger():
 	if not request.json:
@@ -14,9 +15,9 @@ def logger():
 		json_return = [ { 'logged': True, 'cause': 'user is already logged' } ]
 		return jsonify({'resp': json_return})
 	else:
-		usr = request.json['user']
+		usr = request.json['username']
 		password = request.json['password']
-		user = User.query.filter_by(username=usr).first()
+		user = User.objects(username=usr).first()
 		if user is None or not user.check_password(password):
 			#handle login error(username or password are incorrect)
 			json_return = [ { 'logged': False, 'cause': 'password or user incorrect' } ]
