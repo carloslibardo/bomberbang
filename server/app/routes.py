@@ -4,7 +4,7 @@ from flask_login import current_user, logout_user, login_user, login_required
 from app.models import User
 
 #route to login from requests
-@app.route('/app/login', methods=['GET'])
+@app.route('/app/login', methods=['POST'])
 def logger():
 	if not request.json:
 		#handle error
@@ -16,7 +16,9 @@ def logger():
 		return jsonify({'resp': json_return})
 	else:
 		usr = request.json['username']
+		print(usr)
 		password = request.json['password']
+		print(password)
 		user = User.objects(username=usr).first()
 		if user is None or not user.check_password(password):
 			#handle login error(username or password are incorrect)
