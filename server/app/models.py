@@ -1,9 +1,9 @@
 from app import login, db
 from os import urandom
+from flask_login import UserMixin
 from bcrypt import hashpw, gensalt
 from werkzeug.security import safe_str_cmp
 from mongoengine import *
-from flask_login import UserMixin
 
 #TODO add encryption(AES, probably)
 
@@ -32,3 +32,12 @@ class User(UserMixin, db.DynamicDocument):
 
     def check_unique_id(self, unique_id):
         return safe_str_cmp(hashpw(unique_id.encode('utf-8'), self.unique_id.encode('utf-8')).decode('utf-8'), self.unique_id)
+
+#RevokedToken model for revoke json web tokens
+class RevokedToken(db.DynamicDocument):
+        jti = StringField(max_length=120)
+
+        @classmethod
+        def is_jti_blacklisted(cls, jti):
+            query = cls.objects(jti=jti).first()
+            return bool(query)

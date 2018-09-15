@@ -1,3 +1,5 @@
+#parsers to use in resources
+
 from flask_restplus import reqparse
 
 login_parser = reqparse.RequestParser()
