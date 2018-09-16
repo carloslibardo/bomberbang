@@ -1,9 +1,9 @@
 from flask_restplus import Resource, reqparse
-from flask import jsonify
-from app.models import User, RevokedToken
+from app.models import User, RevokedToken, InUseToken
 from app.parsers import login_parser, register_parser
-from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required, get_jwt_identity, get_raw_jwt
+from flask_jwt_extended import create_access_token, create_refresh_token, jwt_required, jwt_refresh_token_required, get_jwt_identity, get_raw_jwt, decode_token
 from flask_login import current_user, login_user, logout_user, login_required
+from jwt.exceptions import ExpiredSignatureError
 
 class UserLogin(Resource):
     def post(self):
@@ -16,14 +16,34 @@ class UserLogin(Resource):
                 return {'message': 'This telephone is not registered'}
             try:
                 login_user(user)
-                access_token = create_access_token(identity=data['username'])
-                refresh_token = create_refresh_token(identity=data['username'])
+                in_use = InUseToken.objects(user=user).first()
+                if in_use is not None:
+                    print('in_use')
+                    access_token = in_use.jwt_access
+                    print('get access')
+                    try:
+                        revoked_token = RevokedToken(jti=decode_token(access_token)['jti'])
+                        revoked_token.save()
+                        print('revoked')
+                    except ExpiredSignatureError:
+                        print('already been revoked')
+                    access_token = create_access_token(identity=data['username'])
+                    in_use.jwt_access = access_token
+                    in_use.save()
+                    refresh_token = in_use.jwt_refresh
+                else:
+                    access_token = create_access_token(identity=data['username'])
+                    refresh_token = create_refresh_token(identity=data['username'])
+                    new_in_use = InUseToken(jwt_access=access_token, jwt_refresh=refresh_token, user=user)
+                    new_in_use.hash_unique_id(data['unique_id'])
+                    new_in_use.save()
                 return {
                     'message': 'Login was succesful',
                     'access_token': access_token,
                     'refresh_token': refresh_token
                 }
             except:
+                print(sys.exc_info())
                 return {'message': 'Unknown error'}
 
 class UserRegister(Resource):
@@ -46,8 +66,24 @@ class UserRegister(Resource):
             try:
                 new_user.save()
                 login_user(new_user)
-                access_token = create_access_token(identity=data['username'])
-                refresh_token = create_refresh_token(identity=data['username'])
+                in_use = InUseToken.objects(user=new_user).first()
+                if in_use is None:
+                    access_token = in_use.jwt_access
+                    try:
+                        revoked_token = RevokedToken(jti=decode_token(access_token)['jti'])
+                        revoked_token.save()
+                    except ExpiredSignatureError:
+                        print('already been revoked')
+                    access_token = create_access_token(identity=data['username'])
+                    in_use.jwt_access = access_token
+                    in_use.save()
+                    refresh_token = in_use.jwt_refresh
+                else:
+                    access_token = create_access_token(identity=data['username'])
+                    refresh_token = create_refresh_token(identity=data['username'])
+                    in_use = InUseToken(jti_access=access_token, jti_refresh=refresh_token, user=new_user)
+                    in_use.hash_unique_id(data['unique_id'])
+                    in_use.save()
                 return {
                     'message': 'User registered',
                     'access_token': access_token,
@@ -74,8 +110,17 @@ class UserRegister(Resource):
 class TokenRefresh(Resource):
     @jwt_refresh_token_required
     def post(self):
+        #create new access token for user
         current_user = get_jwt_identity()
         access_token = create_access_token(identity=current_user)
+        user = User.objects(username=current_user).first()
+        in_use = InUseToken.objects(user=user).first()
+        #revoke last access token
+        revoked_token = RevokedToken(jti=decode_token(in_use.jwt_access)['jti'])
+        revoked_token.save()
+        #reload access token in in use tokens
+        in_use.jwt_access = access_token
+        in_use.save()
         return {
             'access_token': access_token
         }
@@ -107,18 +152,20 @@ class UserLogoutRefresh(Resource):
 #loggout a user by session and token
 class UserLogout(Resource):
     @login_required
-    @jwt_refresh_token_required
     def post(self):
-        jti = get_raw_jwt()['jti']
-        if jti is not None:
-            try:
-                revoked_toke = RevokedToken(jti=jti)
-                revoked_token.save()
-                logout_user()
-                return{'message': 'User was log out and access token was revoked'}
-            except:
-                return{'message': 'Erro when logging out user'}
-        else:
+        try:
+            user = User.objects(username=current_user.username).first()
+            in_use = InUseToken.objects(user=user).first()
+            jti_access = decode_token(in_use.jwt_access)['jti']
+            jti_refresh = decode_token(in_use.jwt_refresh)['jti']
+            revoked_access_token = RevokedToken(jti=jti_access)
+            revoked_access_token.save()
+            revoked_refresh_token = RevokedToken(jti=jti_refresh)
+            revoked_refresh_token.save()
+            in_use.delete()
+            logout_user()
+            return{'message': 'User was log out its tokens revoked'}
+        except:
             try:
                 logout_user()
                 return{'message': 'User was log out'}

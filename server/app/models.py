@@ -41,3 +41,15 @@ class RevokedToken(db.DynamicDocument):
         def is_jti_blacklisted(cls, jti):
             query = cls.objects(jti=jti).first()
             return bool(query)
+
+class InUseToken(db.DynamicDocument):
+    jwt_access = StringField(max_length=512, require=True)
+    jwt_refresh = StringField(max_length=512, require=True)
+    unique_id = StringField(max_length=64, require=True)
+    user = ReferenceField(User)
+
+    def hash_unique_id(self, unique_id):
+        self.unique_id = hashpw(unique_id.encode('utf-8'), gensalt(13)).decode('utf-8')
+
+    def check_unique_id(self, unique_id):
+        return safe_str_cmp(hashpw(unique_id.encode('utf-8'), self.unique_id.encode('utf-8')).decode('utf-8'), self.unique_id)
